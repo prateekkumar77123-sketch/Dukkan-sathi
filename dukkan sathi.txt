@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Local Dev Dashboard — Vite + MCP</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --ok: #22c55e;
+      --err: #ef4444;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 2rem;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    h1 { font-size: 1.5rem; letter-spacing: -0.01em; }
+    .tag {
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      background: #0b1120;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    card, section.card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    card h2 {
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    .url-box {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.85rem;
+      word-break: break-all;
+      color: var(--accent);
+      background: #0b1120;
+      padding: 0.6rem 0.8rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--warn);
+    }
+    .dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+    .dot.err { background: var(--err); box-shadow: 0 0 8px var(--err); }
+    .btn {
+      background: var(--accent);
+      color: #020617;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    iframe {
+      width: 100%;
+      height: 320px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #0b1120;
+    }
+    pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+      background: #0b1120;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow: auto;
+      max-height: 240px;
+      color: #e2e8f0;
+    }
+    .log-line { margin: 0.25rem 0; font-size: 0.8rem; white-space: pre-wrap; }
+    .log-ok { color: var(--ok); }
+    .log-err { color: var(--err); }
+    .log-info { color: var(--muted); }
+    footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    .hide { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🔧 Local Dev Dashboard</h1>
+    <span class="tag">Vite: 5173</span>
+    <span class="tag">MCP: 8001/mcp</span>
+  </header>
+
+  <div class="grid">
+    <!-- Website Card -->
+    <section class="card">
+      <h2>Frontend (Vite)</h2>
+      <div class="url-box">http://localhost:5173</div>
+      <div class="row">
+        <span class="status"><span class="dot" id="dot-web">●</span><span id="text-web">Checking…</span></span>
+      </div>
+      <div class="row">
+        <button class="btn" onclick="openUrl('http://localhost:5173')">Open Website</button>
+        <button class="btn secondary" onclick="toggleIframe('web-iframe')">Toggle Preview</button>
+      </div>
+      <iframe id="web-iframe" class="hide" src="about:blank" title="Website preview"></iframe>
+    </section>
+
+    <!-- MCP Card -->
+    <section class="card">
+      <h2>MCP Server</h2>
+      <div class="url-box">http://localhost:8001/mcp</div>
+      <div class="row">
+        <span class="status"><span class="dot" id="dot-mcp">●</span><span id="text-mcp">Checking…</span></span>
+      </div>
+      <div class="row">
+        <button class="btn" onclick="mcpInitialize()">Initialize MCP</button>
+        <button class="btn secondary" onclick="mcpListTools()">List Tools</button>
+      </div>
+      <pre id="mcp-output">MCP responses will appear here…</pre>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Console / Logs</h2>
+    <div id="console-log">
+      <div class="log-line log-info">[init] Dashboard loaded. Click the buttons above to probe your local services.</div>
+    </div>
+  </section>
+
+  <footer>
+    Save this file as <code>index.html</code>, commit it, and push to GitHub. <br/>
+    Remember: <code>localhost</code> only works on your own machine unless you tunnel it.
+  </footer>
+
+  <script>
+    const WEB_URL = 'http://localhost:5173';
+    const MCP_URL = 'http://localhost:8001/mcp';
+
+    // ---------- UI helpers ----------
+    function log(msg, type = 'info') {
+      const el = document.getElementById('console-log');
+      const line = document.createElement('div');
+      line.className = `log-line log-${type}`;
+      const ts = new Date().toLocaleTimeString();
+      line.textContent = `[${ts}] ${msg}`;
+      el.prepend(line);
+    }
+
+    function setStatus(idPrefix, ok, message) {
+      const dot = document.getElementById(`${idPrefix}-dot`) || document.getElementById(`dot-${idPrefix}`);
+      const text = document.getElementById(`text-${idPrefix}`);
+      if (!dot || !text) return;
+      if (ok) {
+        dot.className = 'dot ok';
+        text.textContent = message || 'Online';
+        text.style.color = 'var(--ok)';
+      } else {
+        dot.className = 'dot err';
+        text.textContent = message || 'Offline / unreachable';
+        text.style.color = 'var(--err)';
+      }
+    }
+
+    function openUrl(url) {
+      window.open(url, '_blank');
+    }
+
+    function toggleIframe(id) {
+      const iframe = document.getElementById(id);
+      const isHidden = iframe.classList.contains('hide');
+      if (isHidden) {
+        iframe.src = WEB_URL;
+        iframe.classList.remove('hide');
+        log('Opened website preview iframe.');
+      } else {
+        iframe.classList.add('hide');
+        iframe.src = 'about:blank';
+        log('Closed website preview iframe.');
+      }
+    }
+
+    // ---------- Endpoint probes ----------
+    async function probe(url, idPrefix) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 4000);
+      try {
+        const res = await fetch(url, {
+          method: 'GET',
+          signal: controller.signal,
+          headers: { 'Accept': 'text/plain, application/json' },
+        });
+        clearTimeout(timeout);
+        setStatus(idPrefix, res.ok, `HTTP ${res.status}`);
+        log(`${url} responded ${res.status}`, 'ok');
+        return true;
+      } catch (e) {
+        clearTimeout(timeout);
+        setStatus(idPrefix, false, e.name === 'AbortError' ? 'Timeout' : 'Unreachable');
+        log(`${url} could not be reached: ${e.message}`, 'err');
+        return false;
+      }
+    }
+
+    async function probeAll() {
+      await probe(WEB_URL, 'web');
+      // MCP usually speaks JSON-RPC over POST; a GET probe tells us if the port is alive
+      await probe(MCP_URL, 'mcp');
+    }
+
+    // ---------- MCP JSON-RPC helpers ----------
+    let mcpId = 0;
+
+    async function mcpRequest(method, params = {}) {
+      mcpId++;
+      const payload = {
+        jsonrpc: '2.0',
+        id: mcpId,
+        method,
+        params,
+      };
+
+      const output = document.getElementById('mcp-output');
+      output.textContent = `Sending ${method}…`;
+
+      try {
+        const res = await fetch(MCP_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json, text/event-stream',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const text = await res.text();
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          parsed = { raw: text };
+        }
+
+        output.textContent = JSON.stringify(parsed, null, 2);
+        log(`MCP ${method} → ${res.status}`, 'ok');
+        return parsed;
+      } catch (e) {
+        output.textContent = `Error: ${e.message}`;
+        log(`MCP ${method} failed: ${e.message}`, 'err');
+        return { error: e.message };
+      }
+    }
+
+    async function mcpInitialize() {
+      setStatus('mcp', false, 'Initializing…');
+      const result = await mcpRequest('initialize', {
+        protocolVersion: '2024-11-05',
+        capabilities: {},
+        clientInfo: { name: 'html-dashboard', version: '1.0.0' },
+      });
+      if (result && result.result) {
+        setStatus('mcp', true, 'Initialized');
+        log('MCP initialize succeeded.', 'ok');
+      } else {
+        setStatus('mcp', false, 'Init failed');
+      }
+    }
+
+    async function mcpListTools() {
+      await mcpRequest('tools/list');
+    }
+
+    // ---------- Boot ----------
+    probeAll();
+    setInterval(probeAll, 30000); // re-check every 30s
+  </script>
+
+</body>
+</html>
